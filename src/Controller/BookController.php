@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class BookController extends AbstractController
 {
@@ -39,9 +40,18 @@ final class BookController extends AbstractController
         SerializerInterface $serializer, 
         EntityManagerInterface $em, 
         UrlGeneratorInterface $urlGenerator,
-        AuthorRepository $authorRepository): JsonResponse 
+        AuthorRepository $authorRepository,
+        ValidatorInterface $validator): JsonResponse 
     {
-        $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
+        $book = $serializer->deserialize($request->getContent(), Book::class, 'json');// deserialze directly in an object Book
+        
+        //Validates data before persist. Returns an error object if not ok
+        $errors = $validator->validate($book);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+        // or other alternative
+        //throw new HttpException(JsonResponse::HTTP_BAD_REQUEST, "La requête est invalide");
         
         //Gets all the data from the request in a array format
         $content = $request->toArray();
